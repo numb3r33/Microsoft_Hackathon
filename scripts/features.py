@@ -1,6 +1,6 @@
 from sklearn.base import BaseEstimator
 from sklearn.preprocessing import LabelEncoder
-from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer, HashingVectorizer
 from sklearn.decomposition import TruncatedSVD
 
 from scipy import sparse
@@ -27,17 +27,20 @@ class FeatureTransformer(BaseEstimator):
 
 	def fit_transform(self, X, y=None):
 		X['summary'] = X.summary.map(self.remove_periods)
+		
  		summary_and_text = X.apply(self.combine_title_summary, axis=1)
 		
-		self.count_vect = TfidfVectorizer(min_df=1, ngram_range=(1, 2), stop_words = None)
-
+		self.tfidf_vect = TfidfVectorizer(min_df=1, ngram_range=(1, 2), stop_words = None)
+		
 		summary_and_text_without_stopwords = map(self.remove_stopwords, summary_and_text)
 		
 		numerical_features = self.numerical_features(X, summary_and_text)
-		count_freq_features = self.count_vect.fit_transform(summary_and_text)
-		self.truncated_svd = TruncatedSVD(n_components=250)
-		truncated_svd_features = self.truncated_svd.fit_transform(count_freq_features)
+		tfidf_features = self.tfidf_vect.fit_transform(summary_and_text)
+		
 
+		self.truncated_svd = TruncatedSVD(n_components=250)
+		truncated_svd_features = self.truncated_svd.fit_transform(tfidf_features)
+		
 		features = []
 
 		features.append(numerical_features)
@@ -70,14 +73,16 @@ class FeatureTransformer(BaseEstimator):
 	def transform(self, X):
 		
 		X['summary'] = X.summary.map(self.remove_periods)
+		
  		summary_and_text = X.apply(self.combine_title_summary, axis=1)
 		
 		summary_and_text_without_stopwords = map(self.remove_stopwords, summary_and_text)
 		
 		numerical_features = self.numerical_features(X, summary_and_text)
-		count_freq_features = self.count_vect.transform(summary_and_text)
-		truncated_svd_features = self.truncated_svd.transform(count_freq_features)
-
+		tfidf_features = self.tfidf_vect.transform(summary_and_text)
+		
+		truncated_svd_features = self.truncated_svd.transform(tfidf_features)
+		
 		features = []
 
 		features.append(numerical_features)
