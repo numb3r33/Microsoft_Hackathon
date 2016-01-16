@@ -31,15 +31,15 @@ class FeatureTransformer(BaseEstimator):
 		
  		summary_and_text = X.apply(self.combine_title_summary, axis=1)
 		
-		self.tfidf_vect = TfidfVectorizer(min_df=2, ngram_range=(1, 3), stop_words = None)
+		self.tfidf_vect = TfidfVectorizer(min_df=2, ngram_range=(1, 5), stop_words = None)
 		
 		summary_and_text_without_stopwords = map(self.remove_stopwords, summary_and_text)
-		
-		numerical_features = self.numerical_features(X, summary_and_text, summary)
-		tfidf_features = self.tfidf_vect.fit_transform(summary_and_text)
-		
 
-		self.truncated_svd = TruncatedSVD(n_components=250)
+		
+		numerical_features = self.numerical_features(X, summary_and_text_without_stopwords, summary)
+		
+		tfidf_features = self.tfidf_vect.fit_transform(summary_and_text)
+		self.truncated_svd = TruncatedSVD(n_components=140)
 		truncated_svd_features = self.truncated_svd.fit_transform(tfidf_features)
 		
 		features = []
@@ -58,9 +58,10 @@ class FeatureTransformer(BaseEstimator):
 
 	def combine_title_summary(self, X):
 		summary = re.sub("[.]", " ", X['summary'])
+		authors = re.sub("[;]", " ", X['authors'])
 		title = X['title']
 
-		return title + ' ' + summary
+		return title + ' ' + authors + ' ' + summary
 
 	def remove_stopwords(self, text):
 		tokens = text.split(' ')
@@ -79,9 +80,9 @@ class FeatureTransformer(BaseEstimator):
 		
 		summary_and_text_without_stopwords = map(self.remove_stopwords, summary_and_text)
 		
-		numerical_features = self.numerical_features(X, summary_and_text, summary)
-		tfidf_features = self.tfidf_vect.transform(summary_and_text)
+		numerical_features = self.numerical_features(X, summary_and_text_without_stopwords, summary)
 		
+		tfidf_features = self.tfidf_vect.transform(summary_and_text)
 		truncated_svd_features = self.truncated_svd.transform(tfidf_features)
 		
 		features = []
